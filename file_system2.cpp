@@ -79,6 +79,8 @@ void myDelete(dir *directory);
 
 void reposition(dir *directory);
 
+void truncate(dir *directory);
+
 string get_path(dir directory);
 
 dir *get_dir(const string &absolute_path);
@@ -150,6 +152,12 @@ int main() {
             string path;
             cin >> path;
             open(get_dir(path));
+        } else if (opt == "truncate") {
+            truncate(current_dir);
+        } else if (opt == "truncatep") {
+            string path;
+            cin >> path;
+            truncate(get_dir(path));
         } else if (opt == "cat") {
             cat(current_dir);
         } else if (opt == "catp") {
@@ -238,12 +246,11 @@ void dedir(dir *directory) {
 
 void ls(dir *directory) {
     for (dir *d: directory->dirs) {
-        cout << d->name << " ";
+        cout << d->name << endl;
     }
     for (file *f: directory->files) {
-        cout << f->name << " ";
+        cout << f->name << endl;
     }
-    cout << endl;
 }
 
 
@@ -322,18 +329,20 @@ void write(dir *directory) {
     cin >> file_name;
     cin >> buff;
     cin >> wmode;
-    bool isFileExist = false;
+
     for (file *f: directory->files) {
-//        if (f->name == file_name){
-        thisfile = f;
-        isFileExist = true;
-        break;
-//        }
+        for (file *openf: opened_files) {
+            if (f == openf) {
+                if (f->omode == 2 || f->omode == 3 || f->omode == 6 || f->omode == 7) {
+                    cout << f->content << endl;
+                    return;
+                }
+                cout << "permission denied" << endl;
+            }
+        }
+        cout << "file does not open" << endl;
     }
-    if (!isFileExist) {
-        cout << "file does not exist" << endl;
-        return;
-    }
+    //TODO：指针位置问题
 //    switch (wmode) {
 //        case 0:
 //            thisfile->content.append(buff);
@@ -367,7 +376,7 @@ void cat(dir *directory) {
     for (file *f: directory->files) {
         for (file *openf: opened_files) {
             if (f == openf) {
-                if (f->omode == 2 || f->omode == 3 || f->omode == 6 || f->omode == 7) {
+                if (f->omode == 4 || f->omode == 5 || f->omode == 6 || f->omode == 7) {
                     cout << f->content << endl;
                     return;
                 }
@@ -379,7 +388,7 @@ void cat(dir *directory) {
 }
 
 
-void myDelete(dir *directory) {
+void myDelete(dir *directory) {     //TODO： 如果已经打开了怎么办？
     string file_name;
     cin >> file_name;
     for (file *f: directory->files) {
@@ -388,9 +397,11 @@ void myDelete(dir *directory) {
             return;
         }
     }
+    cout << "file does not exist" << endl;
 }
 
 void reposition(dir *directory) {
+    //TODO：还没检查打开和权限
     string file_name;
     int pos;
     cin >> file_name;
@@ -407,6 +418,14 @@ void reposition(dir *directory) {
         }
     }
     cout << "file does not exist" << endl;
+}
+
+void truncate(dir *directory){
+     string file_name;
+     int cnt;
+     cin >> file_name;
+     cin >> cnt;
+     //TODO： 属于哪类操作？
 }
 
 
