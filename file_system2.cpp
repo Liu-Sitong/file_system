@@ -28,8 +28,9 @@ public:
     string name;
     dir *parent;
     int omode;
-    bool opened = false;
     user *creater;
+    int position;
+    string content;
 };
 
 class dir {
@@ -52,35 +53,31 @@ void show_man();
 
 void initialize();
 
-void mkdir();
+void mkdir(dir *directory);
 
-void mkdirp();
+void dedir(dir *directory);
 
-void dedir();
-
-void dedirp();
-
-void ls();
-
-void lsp();
+void ls(dir *directory);
 
 void cd();
 
-void cdp();
+void cdp(); // 这两个cd含义不同
 
-void create();
+void create(dir *directory);
 
-void createp();
+void open(dir *directory);
 
-void open();
+void close(dir *directory);
 
-void openp();
+void write(dir *directory);
 
-void write();
+void search(dir *directory, string file_name);
 
-void writep();
+void cat(dir *directory);
 
-void search(dir *directory);
+void myDelete(dir *directory);
+
+void reposition(dir *directory);
 
 string get_path(dir directory);
 
@@ -90,7 +87,7 @@ file *get_file(const string &absolute_path);
 
 vector<string> split(const string &str, const string &delim);
 
-list<file*> opened_files;
+list<file *> opened_files;
 
 int main() {
     initialize();
@@ -102,33 +99,69 @@ int main() {
         if (opt == "man") {
             show_man();
         } else if (opt == "pwd") {
-            cout << get_path(*current_dir);
+            cout << get_path(*current_dir) << endl;
         } else if (opt == "mkdir") {
-            mkdir();
+            mkdir(current_dir);
         } else if (opt == "mkdirp") {
-            mkdirp();
+            string path;
+            cin >> path;
+            mkdir(get_dir(path));
         } else if (opt == "dedir") {
-            dedir();
+            dedir(current_dir);
         } else if (opt == "dedirp") {
-            dedirp();
+            string path;
+            cin >> path;
+            dedir(get_dir(path));
         } else if (opt == "ls") {
-            ls();
+            ls(current_dir);
         } else if (opt == "lsp") {
-            lsp();
+            string path;
+            cin >> path;
+            ls(get_dir(path));
         } else if (opt == "cd") {
             cd();
         } else if (opt == "cdp") {
             cdp();
         } else if (opt == "create") {
-            create();
+            create(current_dir);
         } else if (opt == "createp") {
-            createp();
+            string path;
+            cin >> path;
+            create(get_dir(path));
         } else if (opt == "search") {
-            search(&rootdir);
+            string file_name;
+            cin >> file_name;
+            search(&rootdir, file_name);
         } else if (opt == "open") {
-            open();
+            open(current_dir);
         } else if (opt == "openp") {
-            openp();
+            string path;
+            cin >> path;
+            open(get_dir(path));
+        } else if (opt == "close") {
+            close(current_dir);
+        } else if (opt == "closep") {
+            string path;
+            cin >> path;
+            close(get_dir(path));
+        } else if (opt == "reposition") {
+            reposition(current_dir);
+        } else if (opt == "repositionp") {
+            string path;
+            cin >> path;
+            open(get_dir(path));
+        } else if (opt == "cat") {
+            cat(current_dir);
+        } else if (opt == "catp") {
+            string path;
+            cin >> path;
+            cat(get_dir(path));
+        } else if (opt == "delete") {
+            myDelete(current_dir);
+        } else if (opt == "deletep") {
+            string path;
+            cin >> path;
+            myDelete(get_dir(path));
         } else if (opt == "exit") {
             return 0;
         }
@@ -167,96 +200,52 @@ void initialize() {
 
 string get_path(dir directory) {
     string current_path = directory.name;
-    dir *temp_dir = &directory;
+    dir temp_dir = directory;
     //memcpy(&temp_dir, &current_dir, sizeof(temp_dir));
-    while (temp_dir->parent_dir != nullptr) {
-        temp_dir = temp_dir->parent_dir;
-        current_path = temp_dir->name.append("/").append(current_path);
+    while (temp_dir.parent_dir != nullptr) {
+        temp_dir = *temp_dir.parent_dir;
+        current_path = temp_dir.name.append("/").append(current_path);
     }
     return current_path;
 }
 
-void mkdir() {
-
+void mkdir(dir *directory) {
     string directory_name;
     cin >> directory_name;
-    for (dir *d:current_dir->dirs){ // 检查是否存在
-        if (d->name == directory_name){
-            cout << "directory already exists";
+    for (dir *d:directory->dirs) { // 检查是否存在
+        if (d->name == directory_name) {
+            cout << "directory already exists" << endl;
             return;
         }
     }
 
     dir *new_dir = new dir;
     new_dir->name = directory_name;
-    new_dir->parent_dir = current_dir;
-    current_dir->dirs.push_back(new_dir);
+    new_dir->parent_dir = directory;
+    directory->dirs.push_back(new_dir);
 }
 
-void mkdirp() {
-    string directory_name, path;
-    cin >> path;
-    cin >> directory_name;
-    dir *parent_dir = get_dir(path);
-    for (dir *d:parent_dir->dirs){ // 检查是否存在
-        if (d->name == directory_name){
-            cout << "directory already exists";
-            return;
-        }
-    }
-
-    dir *new_dir = new dir;
-    new_dir->name = directory_name;
-    new_dir->parent_dir = parent_dir;
-    parent_dir->dirs.push_back(new_dir);
-}
-
-void dedir() {
+void dedir(dir *directory) {
     string directory_name;
     cin >> directory_name;
-    for (dir *d: current_dir->dirs) {
+    for (dir *d: directory->dirs) {
         if (d->name == directory_name) {
-            current_dir->dirs.remove(d);
+            directory->dirs.remove(d);
             return;
         }
     }
 }
 
-void dedirp() {
-    string directory_name, path;
-    cin >> path;
-    cin >> directory_name;
-    dir *thisdir = get_dir(path);
-    for (dir *d: thisdir->dirs) {
-        if (d->name == directory_name) {
-            thisdir->dirs.remove(d);
-            return;
-        }
-    }
-}
-
-void ls() {
-    for (dir *d: current_dir->dirs) {
+void ls(dir *directory) {
+    for (dir *d: directory->dirs) {
         cout << d->name << " ";
     }
-    for (file *f: current_dir->files) {
+    for (file *f: directory->files) {
         cout << f->name << " ";
     }
     cout << endl;
 }
 
-void lsp() {
-    string path;
-    cin >> path;
-    dir *thisdir = get_dir(path);
-    for (dir *d: thisdir->dirs) {
-        cout << d->name << " ";
-    }
-    for (file *f: thisdir->files) {
-        cout << f->name << " ";
-    }
-    cout << endl;
-}
 
 void cd() {
     string dir_name;
@@ -267,7 +256,7 @@ void cd() {
             return;
         }
     }
-    cout << "directory does not exist";
+    cout << "directory does not exist" << endl;
     return;
 }
 
@@ -277,15 +266,15 @@ void cdp() {
     current_dir = get_dir(path);
 }
 
-void create() {
+void create(dir *directory) {
     string file_name;
     int omode;
     cin >> file_name;
     cin >> omode;
 
-    for (file *f:current_dir->files){ // 检查是否存在
-        if (f->name == file_name){
-            cout << "file already exists";
+    for (file *f:directory->files) { // 检查是否存在
+        if (f->name == file_name) {
+            cout << "file already exists" << endl;
             return;
         }
     }
@@ -294,53 +283,132 @@ void create() {
     newfile->name = file_name;
     newfile->omode = omode;
     newfile->creater = current_user;
-    current_dir->files.push_back(newfile);
+    directory->files.push_back(newfile);
 }
 
-void createp() {
-    string file_name, path;
-    int omode;
-    cin >> path;
-    cin >> file_name;
-    cin >> omode;
-    dir *thisdir = get_dir(path);
-    for (file *f:thisdir->files){ // 检查是否存在
-        if (f->name == file_name){
-            cout << "file already exists";
-            return;
-        }
-    }
-    file *newfile = new file;
-    newfile->name = file_name;
-    newfile->omode = omode;
-    newfile->creater = current_user;
-    thisdir->files.push_back(newfile);
-}
-
-
-void open(){
+void open(dir *directory) {
     string file_name;
     cin >> file_name;
-    for (file *f: current_dir->files){
-        if (f->name == file_name){
+    for (file *f: directory->files) {
+        if (f->name == file_name) {
+            for (file *openf: opened_files) {
+                if (f == openf) {
+                    cout << "file already open" << endl;
+                    return;
+                }
+            }
             opened_files.push_back(f);
             return;
         }
     }
 }
 
-void openp(){
-    string path, file_name;
-    cin >> path;
+void close(dir *directory) {
+    string file_name;
     cin >> file_name;
-    dir *thisdir = get_dir(path);
-    for (file *f: thisdir->files){
-        if (f->name == file_name){
-            opened_files.push_back(f);
+    for (file *f : opened_files) {
+        if (f->name == file_name) {
+            opened_files.remove(f);
+            return;
+        }
+    }
+    cout << "file does not open" << endl;
+}
+
+void write(dir *directory) {
+    string file_name, buff;
+    int wmode;
+    file *thisfile;
+    cin >> file_name;
+    cin >> buff;
+    cin >> wmode;
+    bool isFileExist = false;
+    for (file *f: directory->files) {
+//        if (f->name == file_name){
+        thisfile = f;
+        isFileExist = true;
+        break;
+//        }
+    }
+    if (!isFileExist) {
+        cout << "file does not exist" << endl;
+        return;
+    }
+//    switch (wmode) {
+//        case 0:
+//            thisfile->content.append(buff);
+//            thisfile->position = thisfile->content.length()-1;
+//            break;
+//        case 1:
+//            string tail;
+//            if ()
+//            thisfile->content.substr(0,thisfile->position).append(buff);
+//            thisfile->position = thisfile->content.length()-1;
+//            break;
+//        case 2:
+//
+//    }
+}
+
+void search(dir *directory, string file_name) {
+    for (file *f: directory->files) {
+        if (f->name == file_name) {
+            cout << get_path(*directory) << "/" << file_name << endl;
+        }
+    }
+    for (dir *d: directory->dirs) {
+        search(d, file_name);
+    }
+}
+
+void cat(dir *directory) {
+    string file_name;
+    cin >> file_name;
+    for (file *f: directory->files) {
+        for (file *openf: opened_files) {
+            if (f == openf) {
+                if (f->omode == 2 || f->omode == 3 || f->omode == 6 || f->omode == 7) {
+                    cout << f->content << endl;
+                    return;
+                }
+                cout << "permission denied" << endl;
+            }
+        }
+        cout << "file does not open" << endl;
+    }
+}
+
+
+void myDelete(dir *directory) {
+    string file_name;
+    cin >> file_name;
+    for (file *f: directory->files) {
+        if (f->name == file_name) {
+            directory->files.remove(f);
             return;
         }
     }
 }
+
+void reposition(dir *directory) {
+    string file_name;
+    int pos;
+    cin >> file_name;
+    cin >> pos;
+    for (file *f: directory->files) {
+        if (f->name == file_name) {
+            if (pos > f->content.length()) {
+                cout << "reposition failed" << endl;
+                return;
+            }
+            cout << "reposition ok" << endl;
+            f->position = pos;
+            return;
+        }
+    }
+    cout << "file does not exist" << endl;
+}
+
 
 file *get_file(const string &absolute_path) {
     vector<string> paths = split(absolute_path, "/");
@@ -352,7 +420,7 @@ file *get_file(const string &absolute_path) {
                 continue;
             }
         }
-        cout << "file does not exist";
+        cout << "file does not exist" << endl;
         return nullptr;
     }
     for (file *f: thisdir->files) {
@@ -360,20 +428,7 @@ file *get_file(const string &absolute_path) {
             return f;
         }
     }
-    cout << "file does not exist";
-}
-
-void search(dir *directory) {
-    string filename;
-    cin >> filename;
-    for (file *f: directory->files) {
-        if (f->name == filename) {
-            cout << get_path(*directory) << "/" << filename << endl;
-        }
-    }
-    for (dir *d: directory->dirs) {
-        search(d);
-    }
+    cout << "file does not exist" << endl;
 }
 
 dir *get_dir(const string &absolute_path) {
@@ -385,8 +440,9 @@ dir *get_dir(const string &absolute_path) {
                 thisdir = d;
                 continue;
             }
+            cout << "directory does not exist" << endl;
+            return nullptr;
         }
-        cout << "directory does not exist";
     }
     return thisdir;
 }
