@@ -18,9 +18,12 @@ class user;
 
 class user {
 public:
-    string name;
+    string username;
+    string password;
+    list<file *> opened_files;
 } root;
 
+list<user *> userlist{&root};
 user *current_user;
 
 class file {
@@ -71,7 +74,7 @@ void close(dir *directory);
 
 void write(dir *directory);
 
-void search(dir *directory, string file_name);
+void search(dir *directory, const string &file_name);
 
 void cat(dir *directory);
 
@@ -81,6 +84,19 @@ void reposition(dir *directory);
 
 void truncate(dir *directory);
 
+void chmod(dir *directory);
+
+void lsfile();
+
+void regusr();
+
+void delusr();
+
+void disusr();
+
+void login();
+
+
 string get_path(dir directory);
 
 dir *get_dir(const string &absolute_path);
@@ -89,37 +105,45 @@ file *get_file(const string &absolute_path);
 
 vector<string> split(const string &str, const string &delim);
 
-list<file *> opened_files;
 
 int main() {
     initialize();
 
     while (true) {
-        cout << current_user->name << "$" << get_path(*current_dir) << "/%:";
+        cout << current_user->username << "$" << get_path(*current_dir) << "/%:";
         string opt;
         cin >> opt;
         if (opt == "man") {
             show_man();
         } else if (opt == "pwd") {
-            cout << get_path(*current_dir) << endl;
+            cout << get_path(*current_dir) << "/" << endl;
         } else if (opt == "mkdir") {
             mkdir(current_dir);
         } else if (opt == "mkdirp") {
             string path;
             cin >> path;
-            mkdir(get_dir(path));
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                mkdir(d);
+            }
         } else if (opt == "dedir") {
             dedir(current_dir);
         } else if (opt == "dedirp") {
             string path;
             cin >> path;
-            dedir(get_dir(path));
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                dedir(d);
+            }
         } else if (opt == "ls") {
             ls(current_dir);
         } else if (opt == "lsp") {
             string path;
             cin >> path;
-            ls(get_dir(path));
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                ls(d);
+            }
         } else if (opt == "cd") {
             cd();
         } else if (opt == "cdp") {
@@ -129,7 +153,10 @@ int main() {
         } else if (opt == "createp") {
             string path;
             cin >> path;
-            create(get_dir(path));
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                create(d);
+            }
         } else if (opt == "search") {
             string file_name;
             cin >> file_name;
@@ -139,37 +166,83 @@ int main() {
         } else if (opt == "openp") {
             string path;
             cin >> path;
-            open(get_dir(path));
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                open(d);
+            }
         } else if (opt == "close") {
             close(current_dir);
         } else if (opt == "closep") {
             string path;
             cin >> path;
-            close(get_dir(path));
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                close(d);
+            }
         } else if (opt == "reposition") {
             reposition(current_dir);
         } else if (opt == "repositionp") {
             string path;
             cin >> path;
-            open(get_dir(path));
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                open(d);
+            }
         } else if (opt == "truncate") {
             truncate(current_dir);
         } else if (opt == "truncatep") {
             string path;
             cin >> path;
-            truncate(get_dir(path));
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                truncate(d);
+            }
+        } else if (opt == "chmod") {
+            chmod(current_dir);
+        } else if (opt == "chmodp") {
+            string path;
+            cin >> path;
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                chmod(d);
+            }
         } else if (opt == "cat") {
             cat(current_dir);
         } else if (opt == "catp") {
             string path;
             cin >> path;
-            cat(get_dir(path));
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                cat(d);
+            }
+        } else if (opt == "write") {
+            write(current_dir);
+        } else if (opt == "writep") {
+            string path;
+            cin >> path;
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                write(d);
+            }
         } else if (opt == "delete") {
             myDelete(current_dir);
         } else if (opt == "deletep") {
             string path;
             cin >> path;
-            myDelete(get_dir(path));
+            dir *d = get_dir(path);
+            if (nullptr != d) {
+                myDelete(d);
+            }
+        } else if (opt == "lsfile") {
+            lsfile();
+        } else if (opt == "regusr") {
+            regusr();
+        } else if (opt == "delusr") {
+            delusr();
+        } else if (opt == "disusr") {
+            disusr();
+        } else if (opt == "login") {
+            login();
         } else if (opt == "exit") {
             return 0;
         }
@@ -202,7 +275,8 @@ void show_man() {
 
 void initialize() {
     current_dir = &rootdir;
-    root.name = "root";
+    root.username = "root";
+    root.password = "111";
     current_user = &root;
 }
 
@@ -270,7 +344,11 @@ void cd() {
 void cdp() {
     string path;
     cin >> path;
-    current_dir = get_dir(path);
+    dir *d;
+    d = get_dir(path);
+    if (nullptr != d) {
+        current_dir = d;
+    }
 }
 
 void create(dir *directory) {
@@ -289,6 +367,7 @@ void create(dir *directory) {
     file *newfile = new file;
     newfile->name = file_name;
     newfile->omode = omode;
+    newfile->parent = directory;
     newfile->creater = current_user;
     directory->files.push_back(newfile);
 }
@@ -298,24 +377,25 @@ void open(dir *directory) {
     cin >> file_name;
     for (file *f: directory->files) {
         if (f->name == file_name) {
-            for (file *openf: opened_files) {
+            for (file *openf: current_user->opened_files) {
                 if (f == openf) {
                     cout << "file already open" << endl;
                     return;
                 }
             }
-            opened_files.push_back(f);
+            current_user->opened_files.push_back(f);
             return;
         }
     }
+    cout << "file does not exist" << endl;
 }
 
 void close(dir *directory) {
     string file_name;
     cin >> file_name;
-    for (file *f : opened_files) {
+    for (file *f : current_user->opened_files) {
         if (f->name == file_name) {
-            opened_files.remove(f);
+            current_user->opened_files.remove(f);
             return;
         }
     }
@@ -326,40 +406,50 @@ void write(dir *directory) {
     string file_name, buff;
     int wmode;
     file *thisfile;
+    string tail;
     cin >> file_name;
     cin >> buff;
     cin >> wmode;
-
     for (file *f: directory->files) {
-        for (file *openf: opened_files) {
-            if (f == openf) {
-                if (f->omode == 2 || f->omode == 3 || f->omode == 6 || f->omode == 7) {
-                    cout << f->content << endl;
+        if (f->name == file_name) {
+            for (file *openf: current_user->opened_files) {
+                if (f == openf) {
+                    if (f->omode == 2 || f->omode == 3 || f->omode == 6 || f->omode == 7) {
+                        switch (wmode) {
+                            case 0:
+                                f->content.append(buff);
+                                f->position = f->content.length();
+                                break;
+                            case 1:
+                                if (f->content.length() > buff.length() + f->position) {
+                                    tail = f->content.substr(f->position + buff.length(),
+                                                             f->content.length());
+                                }
+                                f->content = f->content.substr(0, f->position).append(buff).append(tail);
+                                f->position = f->content.length();
+                                break;
+                            case 2:
+                                f->content = f->content.insert(f->position, buff);
+                                f->position = f->content.length();
+                                break;
+                            default:
+                                cout << "permission denied" << endl;
+                                break;
+                        }
+                        return;
+                    }
+                    cout << "permission denied" << endl;
                     return;
                 }
-                cout << "permission denied" << endl;
             }
+            cout << "file does not open" << endl;
+            return;
         }
-        cout << "file does not open" << endl;
     }
-    //TODO：指针位置问题
-//    switch (wmode) {
-//        case 0:
-//            thisfile->content.append(buff);
-//            thisfile->position = thisfile->content.length()-1;
-//            break;
-//        case 1:
-//            string tail;
-//            if ()
-//            thisfile->content.substr(0,thisfile->position).append(buff);
-//            thisfile->position = thisfile->content.length()-1;
-//            break;
-//        case 2:
-//
-//    }
+    cout << "file does not exist" << endl;
 }
 
-void search(dir *directory, string file_name) {
+void search(dir *directory, const string &file_name) {
     for (file *f: directory->files) {
         if (f->name == file_name) {
             cout << get_path(*directory) << "/" << file_name << endl;
@@ -374,34 +464,43 @@ void cat(dir *directory) {
     string file_name;
     cin >> file_name;
     for (file *f: directory->files) {
-        for (file *openf: opened_files) {
-            if (f == openf) {
-                if (f->omode == 4 || f->omode == 5 || f->omode == 6 || f->omode == 7) {
-                    cout << f->content << endl;
-                    return;
+        if (f->name == file_name) {
+            for (file *openf: current_user->opened_files) {
+                if (f == openf) {
+                    if (f->omode == 4 || f->omode == 5 || f->omode == 6 || f->omode == 7) {
+                        cout << f->content << endl;
+                        return;
+                    }
+                    cout << "permission denied" << endl;
                 }
-                cout << "permission denied" << endl;
             }
+            cout << "file does not open" << endl;
         }
-        cout << "file does not open" << endl;
     }
+    cout << "file does not exist" << endl;
 }
 
 
-void myDelete(dir *directory) {     //TODO： 如果已经打开了怎么办？
+void myDelete(dir *directory) {
     string file_name;
     cin >> file_name;
+    for (file *f: current_user->opened_files) { // 如果已经打开就关了
+        if (f->name == file_name) {
+            directory->files.remove(f);
+            break;
+        }
+    }
     for (file *f: directory->files) {
         if (f->name == file_name) {
             directory->files.remove(f);
             return;
         }
     }
+
     cout << "file does not exist" << endl;
 }
 
 void reposition(dir *directory) {
-    //TODO：还没检查打开和权限
     string file_name;
     int pos;
     cin >> file_name;
@@ -420,14 +519,105 @@ void reposition(dir *directory) {
     cout << "file does not exist" << endl;
 }
 
-void truncate(dir *directory){
-     string file_name;
-     int cnt;
-     cin >> file_name;
-     cin >> cnt;
-     //TODO： 属于哪类操作？
+void truncate(dir *directory) {
+    string file_name;
+    int cnt;
+    cin >> file_name;
+    cin >> cnt;
+    // 属于哪类操作？ 不属于
+    for (file *f: directory->files) {
+        if (f->name == file_name) {
+            f->content = f->content.substr(0, cnt);
+            return;
+        }
+    }
 }
 
+void chmod(dir *directory) {
+    string file_name;
+    int mode;
+    cin >> file_name;
+    cin >> mode;
+    for (file *f: directory->files) {
+        if (f->name == file_name) {
+            f->omode = mode;
+            return;
+        }
+    }
+    cout << "file does not exist" << endl;
+}
+
+void lsfile() {
+    for (user *u: userlist) {
+        for (file *f: u->opened_files) {
+            string path = get_path(*f->parent).empty() ?"/":get_path(*f->parent);
+            cout << path << " " << f->name << " " << f->creater->username << " " << u->username << " "
+                 << f->omode << endl;
+        }
+    }
+}
+
+void regusr() {
+    string username, password;
+    cin >> username;
+    cin >> password;
+    for (user *u: userlist) {
+        if (u->username == username) {
+            cout << "user already exists" << endl;
+            return;
+        }
+    }
+    user *u = new user;
+    u->username = username;
+    u->password = password;
+    userlist.push_back(u);
+    cout << "register ok" << endl;
+}
+
+void delusr() {
+    string username;
+    cin >> username;
+    if (current_user != &root || username == "root") {
+        cout << "permission denied" << endl;
+        return;
+    }
+    for (user *u: userlist) {
+        if (u->username == username) {
+            userlist.remove(u);
+            return;
+        }
+    }
+    cout << "user does not exist" << endl;
+}
+
+void disusr() {
+    if (current_user != &root) {
+        cout << "permission denied" << endl;
+        return;
+    }
+    for (user *u: userlist) {
+        cout << u->username << endl;
+    }
+}
+
+void login() {
+    string username;
+    cin >> username;
+    for (user *u: userlist) {
+        if (u->username == username) {
+            cout << "password:";
+            string password;
+            cin >> password;
+            if (password == u->password) {
+                current_user = u;
+                cout << "Login ok" << endl;
+                return;
+            }
+            cout << "password wrong" << endl;
+        }
+    }
+    cout << "user does not exist" << endl;
+}
 
 file *get_file(const string &absolute_path) {
     vector<string> paths = split(absolute_path, "/");
@@ -454,7 +644,12 @@ dir *get_dir(const string &absolute_path) {
     vector<string> paths = split(absolute_path, "/");
     dir *thisdir = &rootdir;
     for (int i = 0; i < paths.size(); i++) {
+        if (thisdir->dirs.empty()){ // 先排除空dir
+            cout << "directory does not exist" << endl;
+            return nullptr;
+        }
         for (dir *d: thisdir->dirs) {
+
             if (d->name == paths[i]) {
                 thisdir = d;
                 continue;
