@@ -307,16 +307,38 @@ void mkdir(dir *directory) {
     directory->dirs.push_back(new_dir);
 }
 
+void deleteOpened(dir *directory) {
+    for (file *f: directory->files) {
+        auto iter = current_user->opened_files.begin();
+        for (;iter != current_user->opened_files.end();){
+            if (*iter == f){
+                current_user->opened_files.erase(iter++);
+            }else{
+                iter++;
+            }
+        }
+        for (file *ff: current_user->opened_files){
+            if (f == ff){
+                current_user->opened_files.remove(ff);
+            }
+        }
+    }
+    for (dir *d: directory->dirs) {
+        deleteOpened(d);
+    }
+}
 void dedir(dir *directory) {
     string directory_name;
     cin >> directory_name;
     for (dir *d: directory->dirs) {
         if (d->name == directory_name) {
+            deleteOpened(d);
             directory->dirs.remove(d);
             return;
         }
     }
 }
+
 
 void ls(dir *directory) {
     for (dir *d: directory->dirs) {
