@@ -28,19 +28,35 @@ The functions of the file system are as follows:
 When a command can not be executed successfully for some reasons, the errors would be reported; some commands would also report when it is successfully executed:
 
 directory already exists
+
 directory does not exist
+
 file already exists
+
 file does not exist
+
 write ok 
+
 reposition ok
+
 reposition failed
+
 file already open
+
 file does not open
+
 permission denied
+
 register ok
+
 user already exists
+
 user does not exist
+
 login ok
+
 password wrong
+
 permission denied
+
 file does not found
